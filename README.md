@@ -71,7 +71,7 @@ def score(game)
     else
         return 0
     end
-end
+
 Simple enough, return +10 if the current player wins the game, -10 if the other player wins and 0 for a draw. You will note that who the player is doesn't matter. X or O is irrelevant, only who's turn it happens to be.
 
 And now the actual minimax algorithm; note that in this implementation a choice or move is simply a row / column address on the board, for example [0,2] is the top right square on a 3x3 board.
@@ -100,7 +100,7 @@ def minimax(game)
         @choice = moves[min_score_index]
         return scores[min_score_index]
     end
-end
+
 
 <hr>
 <h2>Sample Input and Output</h2>
@@ -110,7 +110,134 @@ end
 ![image](https://github.com/natsaravanan/19AI405FUNDAMENTALSOFARTIFICIALINTELLIGENCE/assets/87870499/dc06427a-d4ce-43a1-95bd-9acfaefac323)
 ![image](https://github.com/natsaravanan/19AI405FUNDAMENTALSOFARTIFICIALINTELLIGENCE/assets/87870499/a8a27e2a-6fd4-46a2-afb5-6d27b8556702)
 ![image](https://github.com/natsaravanan/19AI405FUNDAMENTALSOFARTIFICIALINTELLIGENCE/assets/87870499/a2acb6a1-ed8e-42e5-8968-fe805e4b0255)
+### Program
+```
+import math
 
+# Constants for representing the players and empty squares
+EMPTY = '-'
+PLAYER_X = 'X'
+PLAYER_O = 'O'
+
+def print_board(board):
+    for row in board:
+        print(' '.join(row))
+    print()
+
+def check_winner(board):
+    # Check rows
+    for row in board:
+        if row.count(row[0]) == len(row) and row[0] != EMPTY:
+            return row[0]
+
+    # Check columns
+    for col in range(len(board[0])):
+        if all(board[row][col] == board[0][col] and board[0][col] != EMPTY for row in range(len(board))):
+            return board[0][col]
+
+    # Check diagonals
+    if all(board[i][i] == board[0][0] and board[0][0] != EMPTY for i in range(len(board))) or \
+       all(board[i][len(board)-1-i] == board[0][len(board)-1] and board[0][len(board)-1] != EMPTY for i in range(len(board))):
+        return board[0][0]
+
+    return None
+
+def get_empty_squares(board):
+    empty_squares = []
+    for i in range(len(board)):
+        for j in range(len(board[0])):
+            if board[i][j] == EMPTY:
+                empty_squares.append((i, j))
+    return empty_squares
+
+def minimax(board, depth, maximizing_player):
+    winner = check_winner(board)
+    if winner:
+        if winner == PLAYER_X:
+            return 10 - depth
+        elif winner == PLAYER_O:
+            return -10 + depth
+        else:
+            return 0
+
+    if not get_empty_squares(board):
+        return 0
+
+    if maximizing_player:
+        max_eval = -math.inf
+        for i, j in get_empty_squares(board):
+            board[i][j] = PLAYER_X
+            eval = minimax(board, depth + 1, False)
+            board[i][j] = EMPTY
+            max_eval = max(max_eval, eval)
+        return max_eval
+    else:
+        min_eval = math.inf
+        for i, j in get_empty_squares(board):
+            board[i][j] = PLAYER_O
+            eval = minimax(board, depth + 1, True)
+            board[i][j] = EMPTY
+            min_eval = min(min_eval, eval)
+        return min_eval
+
+def get_best_move(board):
+    best_eval = -math.inf
+    best_move = None
+    for i, j in get_empty_squares(board):
+        board[i][j] = PLAYER_X
+        eval = minimax(board, 0, False)
+        board[i][j] = EMPTY
+        if eval > best_eval:
+            best_eval = eval
+            best_move = (i, j)
+    return best_move
+
+def main():
+    board = [[EMPTY, EMPTY, EMPTY],
+             [EMPTY, EMPTY, EMPTY],
+             [EMPTY, EMPTY, EMPTY]]
+
+    print_board(board)
+
+    while True:
+        player_move = input("Enter your move (row column): ")
+        row, col = map(int, player_move.split())
+        if board[row][col] == EMPTY:
+            board[row][col] = PLAYER_O
+        else:
+            print("Invalid move, try again.")
+            continue
+
+        print_board(board)
+
+        winner = check_winner(board)
+        if winner:
+            print(f"Player {winner} wins!")
+            break
+
+        if not get_empty_squares(board):
+            print("It's a tie!")
+            break
+
+        ai_move = get_best_move(board)
+        board[ai_move[0]][ai_move[1]] = PLAYER_X
+
+        print("AI's move:")
+        print_board(board)
+
+        winner = check_winner(board)
+        if winner:
+            print(f"Player {winner} wins!")
+            break
+
+        if not get_empty_squares(board):
+            print("It's a tie!")
+            break
+
+if __name__ == "__main__":
+    main()
+
+```
 <hr>
 <h2>Result:</h2>
 <p>Thus,Implementation of  Minimax Search Algorithm for a Simple TIC-TAC-TOE game wasa done successfully.</p>
