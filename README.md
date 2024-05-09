@@ -112,127 +112,194 @@ def minimax(game)
 ![image](https://github.com/natsaravanan/19AI405FUNDAMENTALSOFARTIFICIALINTELLIGENCE/assets/87870499/a2acb6a1-ed8e-42e5-8968-fe805e4b0255)
 ### Program
 ```
-import math
+import time
 
-# Constants for representing the players and empty squares
-EMPTY = '-'
-PLAYER_X = 'X'
-PLAYER_O = 'O'
+class Game:
+    def __init__(self):
+        self.initialize_game()
 
-def print_board(board):
-    for row in board:
-        print(' '.join(row))
-    print()
+    def initialize_game(self):
+        self.current_state = [['.','.','.'],
+                              ['.','.','.'],
+                              ['.','.','.']]
 
-def check_winner(board):
-    # Check rows
-    for row in board:
-        if row.count(row[0]) == len(row) and row[0] != EMPTY:
-            return row[0]
+        # Player X always plays first
+        self.player_turn = 'X'
 
-    # Check columns
-    for col in range(len(board[0])):
-        if all(board[row][col] == board[0][col] and board[0][col] != EMPTY for row in range(len(board))):
-            return board[0][col]
-
-    # Check diagonals
-    if all(board[i][i] == board[0][0] and board[0][0] != EMPTY for i in range(len(board))) or \
-       all(board[i][len(board)-1-i] == board[0][len(board)-1] and board[0][len(board)-1] != EMPTY for i in range(len(board))):
-        return board[0][0]
-
-    return None
-
-def get_empty_squares(board):
-    empty_squares = []
-    for i in range(len(board)):
-        for j in range(len(board[0])):
-            if board[i][j] == EMPTY:
-                empty_squares.append((i, j))
-    return empty_squares
-
-def minimax(board, depth, maximizing_player):
-    winner = check_winner(board)
-    if winner:
-        if winner == PLAYER_X:
-            return 10 - depth
-        elif winner == PLAYER_O:
-            return -10 + depth
+    def draw_board(self):
+        for i in range(0, 3):
+            for j in range(0, 3):
+                print('{}|'.format(self.current_state[i][j]), end=" ")
+            print()
+        print()
+    def is_valid(self, px, py):
+        if px < 0 or px > 2 or py < 0 or py > 2:
+            return False
+        elif self.current_state[px][py] != '.':
+            return False
         else:
-            return 0
+            return True
+    def is_end(self):
+    # Vertical win
+        for i in range(0, 3):
+            if (self.current_state[0][i] != '.' and
+                self.current_state[0][i] == self.current_state[1][i] and
+                self.current_state[1][i] == self.current_state[2][i]):
+                return self.current_state[0][i]
 
-    if not get_empty_squares(board):
-        return 0
+        # Horizontal win
+        for i in range(0, 3):
+            if (self.current_state[i] == ['X', 'X', 'X']):
+                return 'X'
+            elif (self.current_state[i] == ['O', 'O', 'O']):
+                return 'O'
 
-    if maximizing_player:
-        max_eval = -math.inf
-        for i, j in get_empty_squares(board):
-            board[i][j] = PLAYER_X
-            eval = minimax(board, depth + 1, False)
-            board[i][j] = EMPTY
-            max_eval = max(max_eval, eval)
-        return max_eval
-    else:
-        min_eval = math.inf
-        for i, j in get_empty_squares(board):
-            board[i][j] = PLAYER_O
-            eval = minimax(board, depth + 1, True)
-            board[i][j] = EMPTY
-            min_eval = min(min_eval, eval)
-        return min_eval
+    # Main diagonal win
+        if (self.current_state[0][0] != '.' and
+            self.current_state[0][0] == self.current_state[1][1] and
+            self.current_state[0][0] == self.current_state[2][2]):
+            return self.current_state[0][0]
 
-def get_best_move(board):
-    best_eval = -math.inf
-    best_move = None
-    for i, j in get_empty_squares(board):
-        board[i][j] = PLAYER_X
-        eval = minimax(board, 0, False)
-        board[i][j] = EMPTY
-        if eval > best_eval:
-            best_eval = eval
-            best_move = (i, j)
-    return best_move
+    # Second diagonal win
+        if (self.current_state[0][2] != '.' and
+            self.current_state[0][2] == self.current_state[1][1] and
+            self.current_state[0][2] == self.current_state[2][0]):
+            return self.current_state[0][2]
 
+    # Is the whole board full?
+        for i in range(0, 3):
+            for j in range(0, 3):
+            # There's an empty field, we continue the game
+                if (self.current_state[i][j] == '.'):
+                    return None
+
+    # It's a tie!
+        return '.'
+    def max(self):
+
+        # Possible values for maxv are:
+        # -1 - loss
+        # 0  - a tie
+        # 1  - win
+
+        # We're initially setting it to -2 as worse than the worst case:
+        maxv = -2
+
+        px = None
+        py = None
+
+        result = self.is_end()
+
+        # If the game came to an end, the function needs to return
+        # the evaluation function of the end. That can be:
+        # -1 - loss
+        # 0  - a tie
+        # 1  - win
+        if result == 'X':
+            return (-1, 0, 0)
+        elif result == 'O':
+            return (1, 0, 0)
+        elif result == '.':
+            return (0, 0, 0)
+
+        for i in range(0, 3):
+            for j in range(0, 3):
+                if self.current_state[i][j] == '.':
+                    # On the empty field player 'O' makes a move and calls Min
+                    # That's one branch of the game tree.
+                    self.current_state[i][j] = 'O'
+                    (m, min_i, min_j) = self.min()
+                    # Fixing the maxv value if needed
+                    if m > maxv:
+                        maxv = m
+                        px = i
+                        py = j
+                    # Setting back the field to empty
+                    self.current_state[i][j] = '.'
+        return (maxv, px, py)
+
+    def min(self):
+
+        # Possible values for minv are:
+        # -1 - win
+        # 0  - a tie
+        # 1  - loss
+
+        # We're initially setting it to 2 as worse than the worst case:
+        minv = 2
+
+        qx = None
+        qy = None
+
+        result = self.is_end()
+
+        if result == 'X':
+            return (-1, 0, 0)
+        elif result == 'O':
+            return (1, 0, 0)
+        elif result == '.':
+            return (0, 0, 0)
+
+        for i in range(0, 3):
+            for j in range(0, 3):
+                if self.current_state[i][j] == '.':
+                    self.current_state[i][j] = 'X'
+                    (m, max_i, max_j) = self.max()
+                    if m < minv:
+                        minv = m
+                        qx = i
+                        qy = j
+                    self.current_state[i][j] = '.'
+
+        return (minv, qx, qy)
+    def play(self):
+        while True:
+            self.draw_board()
+            self.result = self.is_end()
+
+            # Printing the appropriate message if the game has ended
+            if self.result != None:
+                if self.result == 'X':
+                    print('The winner is X!')
+                elif self.result == 'O':
+                    print('The winner is O!')
+                elif self.result == '.':
+                    print("It's a tie!")
+
+                self.initialize_game()
+                return
+
+            # If it's player's turn
+            if self.player_turn == 'X':
+
+                while True:
+
+                    start = time.time()
+                    (m, qx, qy) = self.min()
+                    end = time.time()
+                    print('Evaluation time: {}s'.format(round(end - start, 7)))
+                    print('Recommended move: X = {}, Y = {}'.format(qx, qy))
+
+                    px = int(input('Insert the X coordinate: '))
+                    py = int(input('Insert the Y coordinate: '))
+
+                    (qx, qy) = (px, py)
+
+                    if self.is_valid(px, py):
+                        self.current_state[px][py] = 'X'
+                        self.player_turn = 'O'
+                        break
+                    else:
+                        print('The move is not valid! Try again.')
+
+            # If it's AI's turn
+            else:
+                (m, px, py) = self.max()
+                self.current_state[px][py] = 'O'
+                self.player_turn = 'X'
 def main():
-    board = [[EMPTY, EMPTY, EMPTY],
-             [EMPTY, EMPTY, EMPTY],
-             [EMPTY, EMPTY, EMPTY]]
-
-    print_board(board)
-
-    while True:
-        player_move = input("Enter your move (row column): ")
-        row, col = map(int, player_move.split())
-        if board[row][col] == EMPTY:
-            board[row][col] = PLAYER_O
-        else:
-            print("Invalid move, try again.")
-            continue
-
-        print_board(board)
-
-        winner = check_winner(board)
-        if winner:
-            print(f"Player {winner} wins!")
-            break
-
-        if not get_empty_squares(board):
-            print("It's a tie!")
-            break
-
-        ai_move = get_best_move(board)
-        board[ai_move[0]][ai_move[1]] = PLAYER_X
-
-        print("AI's move:")
-        print_board(board)
-
-        winner = check_winner(board)
-        if winner:
-            print(f"Player {winner} wins!")
-            break
-
-        if not get_empty_squares(board):
-            print("It's a tie!")
-            break
+    g = Game()
+    g.play()
 
 if __name__ == "__main__":
     main()
